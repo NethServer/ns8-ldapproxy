@@ -21,6 +21,7 @@
 #
 
 import agent
+import cluster.userdomains
 import itertools
 import sys
 import os
@@ -35,15 +36,17 @@ rdb = agent.redis_connect(host="127.0.0.1")
 domain_port = rdb.hgetall(f'{agent_id}/data/domain_port')
 
 try:
-    allocated_ports = set(domain_port.values())
+    iports = [int(p) for p in domain_port.values()]
+    allocated_ports = set(iports)
 except AttributeError:
     allocated_ports = set()
 
 free_ports = ports - allocated_ports
 
 is_config_changed = False
-for ksrv in rdb.scan_iter('*/srv/tcp/ldap'):
-    domain = rdb.hget(ksrv, 'domain')
+domains = cluster.userdomains.list_domains(rdb)
+
+for domain in domains:
     if not domain in domain_port:
         try:
             # Allocate the first available port number
