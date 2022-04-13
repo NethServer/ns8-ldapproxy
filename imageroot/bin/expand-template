@@ -25,6 +25,7 @@ import redis
 import agent
 import sys
 import itertools
+import cluster.userdomains
 
 from jinja2 import Environment, FileSystemLoader, select_autoescape
 
@@ -51,45 +52,47 @@ domain_port = rdb.hgetall(f'module/{mid}/data/domain_port')
 #
 # Build the template data model (and store it in the "context" variable)
 #
-domains = {}
-for ksrv in rdb.scan_iter('*/srv/tcp/ldap'):
-    srvh = rdb.hgetall(ksrv)
+config = {}
+domains = cluster.userdomains.list_domains(rdb)
+for domain in domains:
+    dominfo = domains[domain]
 
-    listen_port = domain_port.get(srvh['domain'], '0')
+    listen_port = domain_port.get(domain, '0')
 
     if not listen_port.isnumeric() or int(listen_port) <= 0:
-        print(f"Domain {srvh['domain']} has no valid TCP port allocation", file=sys.stderr)
+        print(f"Domain {domain} has no valid TCP port allocation", file=sys.stderr)
         continue
 
-    domains.setdefault(srvh['domain'], {
-        'domain': srvh['domain'],
-        'base_dn': srvh['base_dn'],
-        'schema': srvh['schema'],
-        'tls': '1' if srvh['tls'] == 'on' else '0',
-        'tls_verify': '1' if srvh['tls_verify'] == 'on' else '0',
-        'bind_dn': srvh['bind_dn'],
-        'bind_password': srvh['bind_password'],
+    config.setdefault(domain, {
+        'domain': domain,
+        'base_dn': dominfo['base_dn'],
+        'schema': dominfo['schema'],
+        'tls': '1' if dominfo['tls'] else '0',
+        'tls_verify': '1' if dominfo['tls_verify'] else '0',
+        'bind_dn': dominfo['bind_dn'],
+        'bind_password': dominfo['bind_password'],
         'listen_port': listen_port,
         'servers': [],
     })
 
-    server = {
-        'origin': ksrv.removesuffix('/srv/tcp/ldap'),
-        'service': 'ldap',
-        'node': srvh['node'],
-        'is_local': node_id == srvh['node'],
-        'port': srvh['port'],
-        'host': srvh['host'] if node_id != srvh['node'] else '127.0.0.1',
-    }
+    for provider in dominfo['providers']:
+        server = {
+            'origin': domain,
+             'service': 'ldap',
+             'node': provider['node'],
+             'is_local': node_id == provider['node'],
+             'port': str(provider['port']),
+             'host': provider['host'] if node_id != provider['node'] else '127.0.0.1',
+        }
 
-    if server['is_local']:
-        # local servers are prepended
-        domains[srvh['domain']]['servers'].insert(0, server)
-    else:
-        # remote servers are appended
-        domains[srvh['domain']]['servers'].append(server)
+        if server['is_local']:
+            # local servers are prepended
+            config[domain]['servers'].insert(0, server)
+        else:
+            # remote servers are appended
+            config[domain]['servers'].append(server)
 
-context = {"domains": list(domains.values())}
+context = {"domains": list(config.values())}
 
 tmpl = jenv.get_template(template_file)
 tmpl.stream(context).dump(sys.stdout)
