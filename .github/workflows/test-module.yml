@@ -16,3 +16,11 @@ jobs:
     with:
       coremodules: "ghcr.io/${{needs.module.outputs.owner}}/${{needs.module.outputs.name}}:${{needs.module.outputs.tag}}"
       repo_ref: ${{needs.module.outputs.sha}}
+  run_tests_on_do:
+    needs: module
+    uses: NethServer/ns8-github-actions/.github/workflows/test-on-digitalocean-infra.yml@main
+    with:
+      coremodules: "ghcr.io/${{needs.module.outputs.owner}}/${{needs.module.outputs.name}}:${{needs.module.outputs.tag}}"
+      repo_ref: ${{needs.module.outputs.sha}}
+    secrets:
+      do_token: ${{ secrets.do_token }}
