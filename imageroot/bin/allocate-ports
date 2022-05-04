@@ -34,6 +34,15 @@ ports |= set([int(port) for port in os.environ['TCP_PORTS'].split(',')])
 
 rdb = agent.redis_connect(host="127.0.0.1")
 domain_port = rdb.hgetall(f'{agent_id}/data/domain_port')
+is_config_changed = False
+
+domains = cluster.userdomains.list_domains(rdb)
+for domain in list(domain_port.keys()):
+    # If the domain does not exist anymore in the cluster, release its port
+    if not domain in domains:
+        print(f"Release TCP port {domain_port[domain]} allocated for domain {domain}")
+        domain_port.pop(domain)
+        is_config_changed = True
 
 try:
     iports = [int(p) for p in domain_port.values()]
@@ -42,9 +51,6 @@ except AttributeError:
     allocated_ports = set()
 
 free_ports = ports - allocated_ports
-
-is_config_changed = False
-domains = cluster.userdomains.list_domains(rdb)
 
 for domain in domains:
     if not domain in domain_port:
@@ -57,7 +63,7 @@ for domain in domains:
 
         domain_port[domain] = nport
         is_config_changed = True
-        print(f"Allocating port {nport} for {domain}...")
+        print(f"Allocating TCP port {nport} for {domain}...")
 
 rdb.close() # close the read-only connection
 
@@ -65,7 +71,8 @@ rdb.close() # close the read-only connection
 # Save the new domain/port allocations
 #
 if is_config_changed:
-    rdb = agent.redis_connect(privileged=True)
-    rdb.hset(f'{agent_id}/data/domain_port', mapping=domain_port)
-    rdb.close()
+    with agent.redis_connect(privileged=True).pipeline() as trx:
+        trx.delete(f'{agent_id}/data/domain_port')
+        trx.hset(f'{agent_id}/data/domain_port', mapping=domain_port)
+        trx.execute()
     print(f"Saved the new domain/port allocation map")
