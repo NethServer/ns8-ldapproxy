@@ -4,7 +4,7 @@ set -e
 images=()
 repobase="${REPOBASE:-ghcr.io/nethserver}"
 
-NGINX_VERSION=1.20.2-alpine
+NGINX_VERSION=1.23.3-alpine
 
 reponame="ldapproxy"
 container=$(buildah from scratch)
