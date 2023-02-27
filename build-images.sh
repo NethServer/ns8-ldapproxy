@@ -4,6 +4,8 @@ set -e
 images=()
 repobase="${REPOBASE:-ghcr.io/nethserver}"
 
+NGINX_VERSION=1.20.2-alpine
+
 reponame="ldapproxy"
 container=$(buildah from scratch)
 
@@ -12,7 +14,7 @@ buildah add "${container}" ui /ui
 buildah config \
     --label='org.nethserver.tcp-ports-demand=8' \
     --label='org.nethserver.flags=core_module no_data_backup' \
-    --label='org.nethserver.images=docker.io/library/nginx:1.20-alpine' \
+    --label="org.nethserver.images=docker.io/library/nginx:${NGINX_VERSION}" \
     --entrypoint=/ "${container}"
 buildah commit "${container}" "${repobase}/${reponame}"
 images+=("${repobase}/${reponame}")

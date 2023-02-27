@@ -1,0 +1,29 @@
+{
+    "$schema": "https://docs.renovatebot.com/renovate-schema.json",
+    "extends": [
+        "config:base"
+    ],
+    "ignorePaths": [
+        "**/ui/**"
+    ],
+    "regexManagers": [
+        {
+            "fileMatch": [
+                "build-images.sh"
+            ],
+            "matchStrings": [
+                "NGINX_VERSION=(?<currentValue>[^\\s]+)"
+            ],
+            "depNameTemplate": "nginx",
+            "datasourceTemplate": "docker"
+        }
+    ],
+    "packageRules": [
+        {
+            "matchPackageNames": [
+                "nginx"
+            ],
+            "allowedVersions": "<= 1.23"
+        }
+    ]
+}
