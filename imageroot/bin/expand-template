@@ -45,7 +45,7 @@ jenv = Environment(
 # to avoid connection problems with the leader node. This command must
 # work even if the local node is disconnected. An old configuration is
 # still acceptable.
-rdb = redis.Redis(host='127.0.0.1', port=6379, username='default', password='default', decode_responses=True)
+rdb = agent.redis_connect(use_replica=True)
 
 domain_port = rdb.hgetall(f'module/{mid}/data/domain_port')
 
