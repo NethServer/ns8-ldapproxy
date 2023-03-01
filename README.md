@@ -1,8 +1,28 @@
 # ldapproxy
 
 The Ldapproxy module is a communication broker between an account provider
-LDAP backend (like Samba DC, OpenLDAP...) and a consumer module that wants
-to authenticate its users against the LDAP service (e.g. Nextcloud).
+LDAP backend (like Samba DC, OpenLDAP, or an external LDAP service) and a
+consumer module that wants to authenticate its users against the LDAP
+service (e.g. Nextcloud). It is a L4 proxy for LDAP services built on Nginx.
+
+As a L4 proxy, there is an important limitation to be aware of: LDAP
+referrals might not work correctly. LDAP clients connecting through the L4
+proxy should not follow LDAP referrals.
+
+## Events
+
+Ldapproxy listens for two types of events
+
+- `ldap-provider-changed`, raised by the cluster APIs when an external
+  LDAP service is configured
+- `service-ldap-changed`, raised by internal LDAP account providers when
+  the LDAP service is configured
+
+The Ldapproxy stores pairs of (domain, port number) in Redis. Each time it
+allocates (or deallocates) a pair, it raises a `user-domain-changed`
+event. This is an example of the raised event, as a Redis command:
+
+    PUBLISH module/ldapproxy1/event/user-domain-changed {"domain":"dom.test","node_id":1}
 
 ## Connect to the LDAP service proxy
 

@@ -1,0 +1,13 @@
+#!/bin/bash
+
+#
+# Copyright (C) 2023 Nethesis S.r.l.
+# SPDX-License-Identifier: GPL-3.0-or-later
+#
+
+# The ldap-provider-changed event is raised by the cluster APIs, when an
+# external LDAP account provider is configured.
+
+set -e
+
+systemctl --user try-reload-or-restart ldapproxy
