@@ -75,7 +75,8 @@ rdb.close() # close the read-only connection
 if len(user_domain_changed_events) > 0:
     with agent.redis_connect(privileged=True).pipeline() as trx:
         trx.delete(f'{agent_id}/data/domain_port')
-        trx.hset(f'{agent_id}/data/domain_port', mapping=domain_port)
+        if domain_port:
+            trx.hset(f'{agent_id}/data/domain_port', mapping=domain_port)
         for domevent in user_domain_changed_events:
             trx.publish(f'{agent_id}/event/user-domain-changed', json.dumps(domevent))
         trx.execute()
