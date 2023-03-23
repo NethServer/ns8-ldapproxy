@@ -32,7 +32,7 @@ node.
 The consumer module runs on the same node where the Ldapproxy instance is
 running. See how to connect with Ldapproxy with the [Python
 `agent.ldapproxy`
-package](https://github.com/NethServer/ns8-scratchpad/blob/main/doc/details.md#users-and-groups-ldapproxy).
+package](https://github.com/NethServer/ns8-core/blob/main/doc/details.md#users-and-groups-ldapproxy).
 
 
 ## Test with ldapsearch
