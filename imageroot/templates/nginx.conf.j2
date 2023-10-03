@@ -14,7 +14,6 @@ stream {
     # Domain {{ item.domain }}
     server {
         proxy_pass {{ item.domain | replace('.', '_') }};
-        listen [::1]:{{ item.listen_port }};
         listen 127.0.0.1:{{ item.listen_port }};
 
         proxy_ssl {{ 'on' if item.tls == '1' else 'off' }};
