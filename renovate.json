@@ -8,22 +8,14 @@
     ],
     "regexManagers": [
         {
+            "customType": "regex",
             "fileMatch": [
                 "build-images.sh"
             ],
             "matchStrings": [
-                "NGINX_VERSION=(?<currentValue>[^\\s]+)"
+                "\\bdocker\\.io/(?<depName>.+):(?<currentValue>[-0-9\\.a-z]+)"
             ],
-            "depNameTemplate": "nginx",
             "datasourceTemplate": "docker"
-        }
-    ],
-    "packageRules": [
-        {
-            "matchPackageNames": [
-                "nginx"
-            ],
-            "allowedVersions": "<= 1.23"
         }
     ]
 }
