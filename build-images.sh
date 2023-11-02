@@ -12,7 +12,7 @@ buildah add "${container}" ui /ui
 buildah config \
     --label='org.nethserver.tcp-ports-demand=8' \
     --label='org.nethserver.flags=core_module no_data_backup' \
-    --label="org.nethserver.images=docker.io/library/nginx:1.23.4-alpine" \
+    --label="org.nethserver.images=docker.io/library/nginx:1.25.3-alpine" \
     --entrypoint=/ "${container}"
 buildah commit "${container}" "${repobase}/${reponame}"
 images+=("${repobase}/${reponame}")
