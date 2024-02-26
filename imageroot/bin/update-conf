@@ -46,7 +46,7 @@ if ! diff -q nginx.conf ${tmpconf} ; then
         --log-driver=none \
         --env=NGINX_ENTRYPOINT_QUIET_LOGS=1 \
         --volume=./:/srv:z \
-        --rm "${NGINX_IMAGE}" \
+        --rm "${LDAPPROXY_BINARY_IMAGE}" \
         nginx -t -c "/srv/${tmpconf}"
     mv -v ${tmpconf} nginx.conf
 fi
