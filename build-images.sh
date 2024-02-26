@@ -4,6 +4,17 @@ set -e
 images=()
 repobase="${REPOBASE:-ghcr.io/nethserver}"
 
+reponame="ldapproxy-binary"
+container=$(buildah from docker.io/library/nginx:1.25.3-alpine)
+buildah run "${container}" /bin/sh <<'EOF'
+set -e
+apk add --no-cache ca-certificates
+EOF
+# Commit the image
+buildah commit --rm "${container}" "${repobase}/${reponame}"
+# Append the image URL to the images array
+images+=("${repobase}/${reponame}")
+
 reponame="ldapproxy"
 container=$(buildah from scratch)
 
@@ -12,7 +23,7 @@ buildah add "${container}" ui /ui
 buildah config \
     --label='org.nethserver.tcp-ports-demand=8' \
     --label='org.nethserver.flags=core_module no_data_backup' \
-    --label="org.nethserver.images=docker.io/library/nginx:1.25.3-alpine" \
+    --label="org.nethserver.images=${repobase}/ldapproxy-binary:${IMAGETAG:-latest}" \
     --entrypoint=/ "${container}"
 buildah commit "${container}" "${repobase}/${reponame}"
 images+=("${repobase}/${reponame}")
