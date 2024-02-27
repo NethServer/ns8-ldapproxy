@@ -19,7 +19,7 @@ ExecStart=/usr/bin/podman run \
     --network=host \
     --replace --name=%N \
     --volume=./nginx:/srv:z \
-    ${LDAPPROXY_BINARY_IMAGE} nginx -g "daemon off;" -c /srv/nginx.conf
+    ${LDAPPROXY_APP_IMAGE} nginx -g "daemon off;" -c /srv/nginx.conf
 ExecReload=-/usr/local/bin/runagent update-conf
 ExecReload=/usr/bin/podman exec %N nginx -s reload
 ExecStop=/usr/bin/podman stop --ignore --cidfile %t/ldapproxy.ctr-id -t 10
