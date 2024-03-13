@@ -17,11 +17,15 @@ stream {
         listen 127.0.0.1:{{ item.listen_port }};
 
         proxy_ssl {{ 'on' if item.tls == '1' else 'off' }};
-        proxy_ssl_verify {{ 'on' if item.tls_verify == '1' else 'off' }};
+        {%- if item.tls_verify == '1' %}
+        proxy_ssl_verify on;
         proxy_ssl_verify_depth {{ item.tls_verify_depth | default('2') }};
+        proxy_ssl_trusted_certificate /etc/ssl/certs/ca-certificates.crt;
+        proxy_ssl_name {{ (item.servers|first).host }};
+        {%- endif %}
     }
     upstream {{ item.domain | replace('.', '_') }} {
-    {%- for server in item.servers %}
+    {%- for server in ([item.servers[0]] if item.tls_verify == '1' else item.servers) %}
         server {{ server.host + ':' + server.port + ('    backup' if not server.is_local and not loop.index0 == 0 else '') }}; # origin {{ server.origin }}
     {%- endfor %}
     }
