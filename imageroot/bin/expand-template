@@ -80,7 +80,7 @@ for domain in domains:
             'origin': domain,
              'service': 'ldap',
              'node': provider['node'],
-             'is_local': node_id == provider['node'],
+             'is_local': str(node_id) == str(provider['node']),
              'port': str(provider['port']),
              'host': provider['host'] if node_id != provider['node'] else '127.0.0.1',
         }
