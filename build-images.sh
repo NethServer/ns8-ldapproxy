@@ -10,7 +10,8 @@ container=$(buildah from scratch)
 buildah add "${container}" imageroot /imageroot
 buildah add "${container}" ui /ui
 buildah config \
-    --label='org.nethserver.tcp-ports-demand=8' \
+    --label="org.nethserver.authorizations=node:portsadm" \
+    --label='org.nethserver.tcp-ports-demand=1024' \
     --label='org.nethserver.flags=core_module no_data_backup' \
     --label="org.nethserver.images=docker.io/library/nginx:1.27.2-alpine" \
     --entrypoint=/ "${container}"

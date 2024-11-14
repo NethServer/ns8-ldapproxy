@@ -22,61 +22,51 @@
 
 import agent
 import cluster.userdomains
-import itertools
-import sys
 import os
 import json
 
 agent_id = os.environ['AGENT_ID']
 node_id = int(os.environ['NODE_ID'])
 
-rbegin, rend = os.environ['TCP_PORTS_RANGE'].split('-')
-ports = set([int(port) for port in range(int(rbegin),int(rend)+1)])
-ports |= set([int(port) for port in os.environ['TCP_PORTS'].split(',')])
-
-rdb = agent.redis_connect(use_replica=True)
+domains = cluster.userdomains.list_domains(agent.redis_connect())
+rdb = agent.redis_connect(privileged=True)
 domain_port = rdb.hgetall(f'{agent_id}/data/domain_port')
+released_ports = rdb.smembers(f'{agent_id}/data/released_ports')
 user_domain_changed_events = []
 
-domains = cluster.userdomains.list_domains(rdb)
-for domain in list(domain_port.keys()):
-    # If the domain does not exist anymore in the cluster, release its port
+# copy the key list, to alter the dict in the FOR-loop:
+domains_with_port = list(domain_port.keys())
+for domain in domains_with_port:
+    # If the domain does not exist anymore in the cluster, release its
+    # allocated port.
     if not domain in domains:
-        print(f"Release TCP port {domain_port[domain]} allocated for domain {domain}")
-        domain_port.pop(domain)
+        print(f"Release TCP port {domain_port[domain]} allocated for old domain {domain}")
+        released_ports.add(domain_port.pop(domain)) # save port number for the future
         user_domain_changed_events.append({"node_id": node_id, "domain": domain})
-
-try:
-    iports = [int(p) for p in domain_port.values()]
-    allocated_ports = set(iports)
-except AttributeError:
-    allocated_ports = set()
-
-free_ports = ports - allocated_ports
 
 for domain in domains:
+    # If the domain has no port allocation, allocate a TCP port to it.
     if not domain in domain_port:
-        try:
-            # Allocate the first available port number
-            nport = free_ports.pop()
-        except KeyError:
-            print(agent.SD_ERR + f"TCP ports range exhausted! {domain} was not allocated a port.")
-            break
-
-        domain_port[domain] = nport
+        if released_ports:
+            nport = released_ports.pop() # reuse old ports
+        else:
+            # Ask the local node to allocate us one more port
+            nport, _ = agent.allocate_ports(ports_number=1, protocol="tcp", keep_existing=True)
+        domain_port[domain] = str(nport)
         user_domain_changed_events.append({"node_id": node_id, "domain": domain})
-        print(f"Allocating TCP port {nport} for {domain}...")
-
-rdb.close() # close the read-only connection
+        print(f"Allocating TCP port {nport} to {domain}...")
 
 #
-# Save the new domain/port allocations any change occurred
+# Persist changes to Redis and raise events for applications
 #
 if len(user_domain_changed_events) > 0:
-    with agent.redis_connect(privileged=True).pipeline() as trx:
+    with rdb.pipeline() as trx:
         trx.delete(f'{agent_id}/data/domain_port')
         if domain_port:
             trx.hset(f'{agent_id}/data/domain_port', mapping=domain_port)
+        trx.delete(f'{agent_id}/data/released_ports')
+        if released_ports:
+            trx.sadd(f'{agent_id}/data/released_ports', *released_ports)
         for domevent in user_domain_changed_events:
             trx.publish(f'{agent_id}/event/user-domain-changed', json.dumps(domevent))
         trx.execute()
