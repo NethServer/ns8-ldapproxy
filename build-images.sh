@@ -14,7 +14,7 @@ buildah config \
     --label="org.nethserver.authorizations=node:portsadm" \
     --label='org.nethserver.tcp-ports-demand=1024' \
     --label='org.nethserver.flags=core_module no_data_backup' \
-    --label="org.nethserver.images=docker.io/library/nginx:1.27.4-alpine" \
+    --label="org.nethserver.images=docker.io/library/nginx:1.28.0-alpine" \
     --entrypoint=/ "${container}"
 buildah commit "${container}" "${repobase}/${reponame}"
 images+=("${repobase}/${reponame}")
