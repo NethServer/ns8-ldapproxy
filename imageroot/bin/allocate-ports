@@ -28,7 +28,7 @@ import json
 agent_id = os.environ['AGENT_ID']
 node_id = int(os.environ['NODE_ID'])
 
-domains = cluster.userdomains.list_domains(agent.redis_connect())
+domains = cluster.userdomains.list_domains(agent.redis_connect(use_replica=True))
 rdb = agent.redis_connect(privileged=True)
 domain_port = rdb.hgetall(f'{agent_id}/data/domain_port')
 released_ports = rdb.smembers(f'{agent_id}/data/released_ports')
