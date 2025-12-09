@@ -32,7 +32,8 @@ domains = cluster.userdomains.list_domains(agent.redis_connect(use_replica=True)
 rdb = agent.redis_connect(privileged=True)
 domain_port = rdb.hgetall(f'{agent_id}/data/domain_port')
 released_ports = rdb.smembers(f'{agent_id}/data/released_ports')
-user_domain_changed_events = []
+changed_domains = [] # for multi-domain new event format, single-call
+compatibility_domain = None # for single-domain old event format compatibility
 
 # copy the key list, to alter the dict in the FOR-loop:
 domains_with_port = list(domain_port.keys())
@@ -42,7 +43,7 @@ for domain in domains_with_port:
     if not domain in domains:
         print(f"Release TCP port {domain_port[domain]} allocated for old domain {domain}")
         released_ports.add(domain_port.pop(domain)) # save port number for the future
-        user_domain_changed_events.append({"node_id": node_id, "domain": domain})
+        changed_domains.append(domain)
 
 for domain in domains:
     # If the domain has no port allocation, allocate a TCP port to it.
@@ -53,13 +54,15 @@ for domain in domains:
             # Ask the local node to allocate us one more port
             nport, _ = agent.allocate_ports(ports_number=1, protocol="tcp", keep_existing=True)
         domain_port[domain] = str(nport)
-        user_domain_changed_events.append({"node_id": node_id, "domain": domain})
+        changed_domains.append(domain)
+        if compatibility_domain is None:
+            compatibility_domain = domain
         print(f"Allocating TCP port {nport} to {domain}...")
 
 #
-# Persist changes to Redis and raise events for applications
+# Persist changes to Redis and raise event for applications
 #
-if len(user_domain_changed_events) > 0:
+if len(changed_domains) > 0:
     with rdb.pipeline() as trx:
         trx.delete(f'{agent_id}/data/domain_port')
         if domain_port:
@@ -67,7 +70,10 @@ if len(user_domain_changed_events) > 0:
         trx.delete(f'{agent_id}/data/released_ports')
         if released_ports:
             trx.sadd(f'{agent_id}/data/released_ports', *released_ports)
-        for domevent in user_domain_changed_events:
-            trx.publish(f'{agent_id}/event/user-domain-changed', json.dumps(domevent))
+        trx.publish(f'{agent_id}/event/user-domain-changed', json.dumps({
+            "node_id": node_id,
+            "domain": compatibility_domain or changed_domains[0],
+            "domains": changed_domains,
+        }))
         trx.execute()
     print(f"Saved the new domain/port allocation map")
