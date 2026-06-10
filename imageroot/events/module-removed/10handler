@@ -1,0 +1,14 @@
+#!/bin/bash
+
+#
+# Copyright (C) 2026 Nethesis S.r.l.
+# SPDX-License-Identifier: GPL-3.0-or-later
+#
+
+# The module-removed event is raised when a module is removed from the
+# cluster. When the removed module was an LDAP provider, ldapproxy must
+# reconfigure itself to drop the stale upstream server entry.
+
+set -e
+
+systemctl --user try-reload-or-restart ldapproxy
