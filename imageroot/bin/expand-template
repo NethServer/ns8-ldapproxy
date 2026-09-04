@@ -92,7 +92,7 @@ for domain in domains:
             # remote servers are appended
             config[domain]['servers'].append(server)
 
-context = {"domains": list(config.values())}
+context = {"domains": list(config.values()), "log_level": modulenv.get('LOG_LEVEL', 'warn')}
 
 tmpl = jenv.get_template(template_file)
 tmpl.stream(context).dump(sys.stdout)

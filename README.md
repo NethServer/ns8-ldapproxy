@@ -35,6 +35,22 @@ running. See how to connect with Ldapproxy with the [Python
 package](https://github.com/NethServer/ns8-core/blob/main/doc/details.md#users-and-groups-ldapproxy).
 
 
+## Logging
+
+By default Nginx logs only `warn` level and above, to avoid flooding
+journald/Loki with per-connection and worker lifecycle messages.
+
+For debugging, raise the log level by setting `LOG_LEVEL` in the module
+`state/environment` file (e.g. `info` or `notice`), then reload the
+service to regenerate `nginx.conf` and reload Nginx:
+
+    runagent -m ldapproxy1
+    echo 'LOG_LEVEL=info' >> environment
+    systemctl --user reload ldapproxy
+
+Remove the `LOG_LEVEL` line (or set it back to `warn`) and reload again
+once debugging is done.
+
 ## Test with ldapsearch
 
 Annotate the TCP port and bind credentials from the output of `runagent
