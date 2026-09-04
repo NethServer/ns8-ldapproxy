@@ -1,7 +1,7 @@
 user nginx;
 worker_processes auto;
 
-error_log /var/log/nginx/error.log info;
+error_log /var/log/nginx/error.log {{ log_level | default('warn') }};
 pid /var/run/nginx.pid;
 
 events {
