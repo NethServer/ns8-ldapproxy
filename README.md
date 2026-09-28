@@ -65,5 +65,5 @@ Test with Podman `host` network:
 
 Test with Podman `private` network:
 
-    podman run --network=slirp4netns:allow_host_loopback=true --replace --name=alpine-ldapclient --rm -d alpine sh -c 'apk add openldap-clients ; sleep INF'
-    podman exec -i alpine-ldapclient ldapsearch -x -D "${BIND_DN}" -w "${BIND_PASSWORD}" -s base -H ldap://"10.0.2.2:${TCP_PORT}"
+    podman run --network=private --replace --name=alpine-ldapclient --rm -d alpine sh -c 'apk add openldap-clients ; sleep INF'
+    podman exec -i alpine-ldapclient ldapsearch -x -D "${BIND_DN}" -w "${BIND_PASSWORD}" -s base -H ldap://host.containers.internal:"${TCP_PORT}"
