@@ -17,12 +17,19 @@ Listen on all IPv4 addresses
     Should Contain    ${output}    0.0.0.0:${LDAP.port}
 
 Reach ldapproxy from a rootless container on the default network
-    ${output}  ${rc} =    Execute Command    runagent -m ldapproxy1 podman run --rm ${CLIENT_IMAGE} sh -c 'apk add -q openldap-clients && ldapsearch -LLL -x -H ldap://host.containers.internal:${LDAP.port} -D "${LDAP.bind_dn}" -w "${LDAP.bind_password}" -s base -b "${LDAP.base_dn}" dn'
+    Query ldapproxy from a rootless container    pasta
+
+Reach ldapproxy from a rootless container with a private address
+    Query ldapproxy from a rootless container    pasta:-a,10.0.2.100,-n,24,-g,10.0.2.2
+
+*** Keywords ***
+Query ldapproxy from a rootless container
+    [Arguments]    ${network}
+    ${output}  ${rc} =    Execute Command    runagent -m ldapproxy1 podman run --rm --network=${network} ${CLIENT_IMAGE} sh -c 'apk add -q openldap-clients && ldapsearch -LLL -x -H ldap://cluster-localnode:${LDAP.port} -D "${LDAP.bind_dn}" -w "${LDAP.bind_password}" -s base -b "${LDAP.base_dn}" dn'
     ...    return_rc=True
     Should Be Equal As Integers    ${rc}  0
     Should Contain    ${output}    dn: ${LDAP.base_dn}
 
-*** Keywords ***
 Create the test user domain
     ${output}  ${rc} =    Execute Command    api-cli run add-internal-provider --data '{"image":"openldap","node":1}'
     ...    return_rc=True
